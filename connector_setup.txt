@@ -1,0 +1,18 @@
+curl --location 'http://localhost:8083/connectors' \
+   --header 'Accept: application/json' \
+   --header 'Content-Type: application/json' \
+   --data '{
+   "name": "bank-connector",
+   "config": {
+       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+       "database.hostname": "debezium-postgres",
+       "database.port": "5432",
+       "database.user": "postgres",
+       "database.password": "password",
+       "database.dbname": "bank",
+       "database.server.id": "184054",
+       "table.include.list": "public.users,public.accounts",
+       "topic.prefix": "bank",
+       "decimal.handling.mode": "string"
+   }
+}'
