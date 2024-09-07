@@ -5,7 +5,7 @@ curl --location 'http://localhost:8083/connectors' \
    "name": "bank-connector",
    "config": {
        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-       "database.hostname": "debezium-postgres",
+       "database.hostname": "postgres",
        "database.port": "5432",
        "database.user": "postgres",
        "database.password": "password",

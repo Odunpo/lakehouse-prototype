@@ -38,7 +38,7 @@ RETURNING *;
 
 
 INSERT INTO "accounts" (user_id, currency, balance)
-VALUES ('a9235eb1-bcc5-4cfc-aeb3-e9c37eec6abd', 'EUR', 1001.25)
+VALUES ('65ee8afb-2de2-4ef4-b25f-508f2e8e54c1', 'EUR', 1001.25)
 RETURNING *;
 
 

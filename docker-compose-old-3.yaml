@@ -1,0 +1,249 @@
+version: "3.9"
+
+x-common-environment: &common-environment
+  AWS_ACCESS_KEY_ID: admin
+  AWS_SECRET_ACCESS_KEY: password
+  AWS_REGION: us-east-1
+
+networks:
+  lakehouse_net:
+
+volumes:
+  minio_data:
+
+services:
+  debezium-postgres:
+    image: debezium/postgres:14-alpine
+    container_name: debezium-postgres
+    hostname: debezium-postgres
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: bank
+    networks:
+      - lakehouse_net
+
+  debezium-kafka:
+    image: bitnami/kafka:3.4
+    container_name: debezium-kafka
+    hostname: always
+    ports:
+      - '9092:9092'
+    environment:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_KRAFT_CLUSTER_ID: q0k00yjQRaqWmAAAZv955w
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: INTERNAL://debezium-kafka:29092,CONTROLLER://debezium-kafka:29093,EXTERNAL://0.0.0.0:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://debezium-kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@debezium-kafka:29093
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    networks:
+      - lakehouse_net
+
+  debezium-connect:
+    image: debezium/connect:2.3
+    container_name: debezium-connect
+    hostname: debezium-connect
+    restart: always
+    ports:
+      - '8083:8083'
+    environment:
+      BOOTSTRAP_SERVERS: debezium-kafka:29092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      ENABLE_DEBEZIUM_SCRIPTING: 'true'
+    links:
+      - debezium-kafka
+      - debezium-postgres
+    networks:
+      - lakehouse_net
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: catalog
+      POSTGRES_HOST_AUTH_METHOD: md5
+    networks:
+      lakehouse_net:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d catalog"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  hive-metastore:
+    container_name: hive-metastore
+    hostname: hive-metastore
+    image: 'starburstdata/hive:3.1.2-e.15'
+    ports:
+      - '9083:9083'
+    environment:
+      HIVE_METASTORE_DRIVER: org.postgresql.Driver
+      HIVE_METASTORE_JDBC_URL: jdbc:postgresql://postgres:5432/catalog
+      HIVE_METASTORE_USER: admin
+      HIVE_METASTORE_PASSWORD: password
+      HIVE_METASTORE_WAREHOUSE_DIR: s3://warehouse/
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: admin
+      S3_SECRET_KEY: password
+      S3_PATH_STYLE_ACCESS: "true"
+      REGION: ""
+      GOOGLE_CLOUD_KEY_FILE_PATH: ""
+      AZURE_ADL_CLIENT_ID: ""
+      AZURE_ADL_CREDENTIAL: ""
+      AZURE_ADL_REFRESH_URL: ""
+      AZURE_ABFS_STORAGE_ACCOUNT: ""
+      AZURE_ABFS_ACCESS_KEY: ""
+      AZURE_WASB_STORAGE_ACCOUNT: ""
+      AZURE_ABFS_OAUTH: ""
+      AZURE_ABFS_OAUTH_TOKEN_PROVIDER: ""
+      AZURE_ABFS_OAUTH_CLIENT_ID: ""
+      AZURE_ABFS_OAUTH_SECRET: ""
+      AZURE_ABFS_OAUTH_ENDPOINT: ""
+      AZURE_WASB_ACCESS_KEY: ""
+    depends_on:
+      - postgres
+      - minio
+    networks:
+      lakehouse_net:
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+      MINIO_DOMAIN: minio
+    networks:
+      lakehouse_net:
+        aliases:
+          - warehouse.minio
+    volumes:
+      - minio_data:/data
+    ports:
+      - '9001:9001'
+      - '9000:9000'
+    command: ["server", "/data", "--console-address", ":9001"]
+
+  mc:
+    depends_on:
+      - minio
+    image: minio/mc
+    container_name: mc
+    networks:
+      - lakehouse_net
+    environment:
+      <<: *common-environment
+    entrypoint: >
+      /bin/sh -c "
+        until (/usr/bin/mc config host add minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+        /usr/bin/mc mb minio/warehouse;
+        /usr/bin/mc policy set public minio/warehouse;
+        tail -f /dev/null
+      "
+
+  trino:
+    image: trinodb/trino
+    container_name: trino
+    networks:
+      - lakehouse_net
+    depends_on:
+      - hive-metastore
+      - minio
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./iceberg-hive.properties:/etc/trino/catalog/iceberg.properties
+    environment:
+      <<: *common-environment
+
+  connect:
+    image: confluentinc/cp-kafka-connect-base:7.3.0
+    depends_on:
+      - debezium-kafka
+    networks:
+      lakehouse_net:
+    hostname: connect
+    container_name: connect
+    ports:
+      - 8084:8083
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'debezium-kafka:29092'
+      CONNECT_REST_ADVERTISED_HOST_NAME: "connect"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: connect-cluster-group
+      CONNECT_CONFIG_STORAGE_TOPIC: _kafka-connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: _kafka-connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: _kafka-connect-status
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.StringConverter"
+      CONNECT_INTERNAL_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+      CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_PLUGIN_PATH: '/usr/share/java,/usr/share/confluent-hub-components/,/connectors/'
+      AWS_ACCESS_KEY_ID: "admin"
+      AWS_SECRET_ACCESS_KEY: "password"
+    command:
+      - bash
+      - -c
+      - |
+        #
+        echo "Installing connector plugins"
+        confluent-hub install --no-prompt tabular/iceberg-kafka-connect-hms:0.6.18
+        #
+        echo "Launching Kafka Connect worker"
+        /etc/confluent/docker/run &
+        #
+        echo "Waiting for Kafka Connect to start listening on localhost ⏳"
+        while : ; do
+          curl_status=$$(curl -s -o /dev/null -w %{http_code} http://localhost:8083/connectors)
+          echo -e $$(date) " Kafka Connect listener HTTP state: " $$curl_status " (waiting for 200)"
+          if [ $$curl_status -eq 200 ] ; then
+            break
+          fi
+          sleep 5
+        done
+        echo -e "\n--\n+> Creating connector"
+        curl -X PUT \
+        -H 'Content-Type: application/json' \
+        -H 'Accept: application/json' http://localhost:8083/connectors/IcebergSinkConnector/config \
+        -d '{
+          "tasks.max": "1",
+          "topics": "bank.public.users",
+          "connector.class": "io.tabular.iceberg.connect.IcebergSinkConnector",
+          "iceberg.catalog.s3.endpoint": "http://minio:9000",
+          "iceberg.catalog.s3.secret-access-key": "password",
+          "iceberg.catalog.s3.access-key-id": "admin",
+          "iceberg.catalog.s3.path-style-access": "true",
+          "iceberg.catalog.uri": "thrift://hive-metastore:9083",
+          "iceberg.catalog.warehouse": "s3://warehouse/",
+          "iceberg.catalog.client.region": "us-east-1",
+          "iceberg.catalog.type": "hive",
+          "iceberg.catalog.io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
+          "iceberg.control.commitIntervalMs": "1000",
+          "iceberg.tables": "bank.users2",
+          "value.converter.schemas.enable": "false",
+          "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+          "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+          "schemas.enable": "false"
+        }'
+        sleep infinity
