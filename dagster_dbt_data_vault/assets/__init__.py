@@ -1,5 +1,4 @@
-from .raw_data.assets import raw_data_assets, asset_configs
-from .dbt import dbt_bank
+from .dbt.assets import dbt_bank
+from .raw_data.assets import raw_data_assets, raw_data_assets_configs
 
-
-__all__ = ("raw_data_assets", "asset_configs", "dbt_bank")
+__all__ = ("dbt_bank", "raw_data_assets", "raw_data_assets_configs")

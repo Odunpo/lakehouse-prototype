@@ -1,10 +1,4 @@
-from .raw_data import duckdb_resource, kafka_resource, iceberg_catalog_resource
-from .dbt_resource import dbt_resource
+from .dbt.resources import dbt_resource
+from .raw_data.trino import trino_resource
 
-
-__all__ = (
-    "duckdb_resource",
-    "kafka_resource",
-    "dbt_resource",
-    "iceberg_catalog_resource"
-)
+__all__ = ("dbt_resource", "trino_resource")

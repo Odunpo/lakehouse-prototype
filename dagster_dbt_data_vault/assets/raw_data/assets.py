@@ -1,66 +1,67 @@
-import os
+from typing import List
 
-from dagster import graph_asset, AssetsDefinition
+from dagster import asset, MaterializeResult, Config, AssetsDefinition
 
-import dagster_dbt_data_vault.ops as op
+from dagster_dbt_data_vault.resources.raw_data.trino import TrinoResource
 from .asset_configuration import (
     AssetConfiguration,
-    load_asset_configs_from_yaml,
+    raw_data_assets_configs,
 )
 
 
-def raw_data_asset_factory(config: AssetConfiguration) -> AssetsDefinition:
-    @graph_asset(
-        name=config.name,
-        group_name=config.group_name,
-        description=config.description,
-        config={
-            "retrieve_offsets_from_kafka": {
-                "config": {
-                    "topic": config.kafka_configuration.topic,
-                }
-            },
-            "retrieve_offsets_from_db": {
-                "config": {
-                    "topic": config.kafka_configuration.topic,
-                    "database": config.destination_configuration.database,
-                    "table": config.offsets_table,
-                }
-            },
-            "process_kafka_messages": {
-                "config": {
-                    "topic": config.kafka_configuration.topic,
-                }
-            },
-            "load_kafka_messages": {
-                "config": {
-                    "database": config.destination_configuration.database,
-                    "table": config.destination_configuration.table,
-                }
-            },
-            "save_offsets": {
-                "config": {
-                    "topic": config.kafka_configuration.topic,
-                    "database": config.destination_configuration.database,
-                    "table": config.offsets_table,
-                }
-            },
-        }
-    )
-    def _asset():
-        kafka_offsets = op.retrieve_offsets_from_kafka()
-        db_offsets = op.retrieve_offsets_from_db()
-        offsets = op.define_offsets(kafka_offsets, db_offsets)
-        messages = op.extract_kafka_messages(offsets)
-        proc_messages = op.process_kafka_messages(messages)
-        new_offsets, num_messages = op.load_kafka_messages(proc_messages)
-        return op.save_offsets(new_offsets, num_messages)
-
-    return _asset
+class LastLsnConfig(Config):
+    last_lsn: int
 
 
-script_dir = os.path.dirname(__file__)
-config_path = os.path.join(script_dir, "config.yml")
-asset_configs = load_asset_configs_from_yaml(config_path)
+class RawDataAssetFactory:
+    def __init__(self, asset_configs: List[AssetConfiguration]):
+        self.asset_configs = asset_configs
 
-raw_data_assets = [raw_data_asset_factory(c) for c in asset_configs]
+    def create_assets(self) -> List[AssetsDefinition]:
+        assets = []
+        for asset_config in self.asset_configs:
+            assets.append(
+                self._create_asset(
+                    name=asset_config.name,
+                    description=asset_config.description,
+                    group_name=asset_config.group_name,
+                    table_name=asset_config.table_name,
+                )
+            )
+
+        return assets
+
+    @staticmethod
+    def _create_asset(
+            name: str,
+            description: str,
+            group_name: str,
+            table_name: str,
+    ) -> AssetsDefinition:
+        @asset(
+            name=name,
+            description=description,
+            group_name=group_name,
+            compute_kind="Python",
+        )
+        def _asset(trino: TrinoResource, config: LastLsnConfig):
+            query = f"""
+                SELECT count(*)
+                FROM {table_name}
+                WHERE source_lsn > {config.last_lsn}
+            """
+
+            with trino.get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute(query)
+                res = cur.fetchone()
+
+            return MaterializeResult(
+                metadata={"New rows": res[0] if res else 0}
+            )
+
+        return _asset
+
+
+raw_data_factory = RawDataAssetFactory(raw_data_assets_configs)
+raw_data_assets = raw_data_factory.create_assets()

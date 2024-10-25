@@ -38,14 +38,23 @@ RETURNING *;
 
 
 INSERT INTO "accounts" (user_id, currency, balance)
-VALUES ('65ee8afb-2de2-4ef4-b25f-508f2e8e54c1', 'EUR', 1001.25)
+VALUES ('ec7fa6c2-68cf-4dfa-9673-31dff287cbd1', 'EUR', 1001.25)
 RETURNING *;
 
 
 INSERT INTO "users" (email, name)
-VALUES ('sonya@sonya.com', 'sonya')
+VALUES ('sonya@sonya.com', 'Sonya')
 ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name
 RETURNING *;
+
+
+INSERT INTO "accounts" (user_id, currency, balance)
+VALUES ('39bf0145-59c6-46aa-a390-b75e62efa3d1', 'EUR', 2500.00)
+RETURNING *;
+
+UPDATE "accounts"
+SET balance = 3000.00
+WHERE user_id = '39bf0145-59c6-46aa-a390-b75e62efa3d1';
 
 
 UPDATE "users"
@@ -53,9 +62,23 @@ SET name = 'Mr. Oleg'
 WHERE email = 'oleg@oleg.com';
 
 
+INSERT INTO "users" (email, name)
+VALUES ('test@test.com', 'test')
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name
+RETURNING *;
+
+
 DELETE
 FROM "users"
-WHERE email = 'sonya@sonya.com';
+WHERE email = 'test@test.com';
 
 
 SELECT * FROM users;
+SELECT * FROM accounts;
+
+
+SELECT
+    u.name,
+    a.balance
+FROM users u
+LEFT JOIN accounts a on u.id = a.user_id;

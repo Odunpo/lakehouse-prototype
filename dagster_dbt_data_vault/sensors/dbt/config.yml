@@ -1,0 +1,27 @@
+sensors:
+  - name: parsed_users_sensor
+    job: parsed_users_job
+    upstream_asset: raw_users
+  - name: parsed_accounts_sensor
+    job: parsed_accounts_job
+    upstream_asset: raw_accounts
+  - name: h_users_sensor
+    job: h_users_job
+    prefix: parsed_data
+    upstream_asset: parsed_users
+  - name: s_users_sensor
+    job: s_users_job
+    prefix: parsed_data
+    upstream_asset: parsed_users
+  - name: h_accounts_sensor
+    job: h_accounts_job
+    prefix: parsed_data
+    upstream_asset: parsed_accounts
+  - name: s_accounts_sensor
+    job: s_accounts_job
+    prefix: parsed_data
+    upstream_asset: parsed_accounts
+  - name: l_users_accounts_sensor
+    job: l_users_accounts_job
+    prefix: parsed_data
+    upstream_asset: parsed_accounts

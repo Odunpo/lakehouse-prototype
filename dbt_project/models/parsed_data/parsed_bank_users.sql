@@ -1,1 +1,0 @@
-SELECT COUNT(*) count_users FROM {{ source('raw_data', 'users') }}

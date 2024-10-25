@@ -6,9 +6,7 @@ setup(
     install_requires=[
         "dagster==1.7.14",
         "dagster-cloud",
-        "dagster-duckdb",
         "dagster-dbt",
-        "dbt-duckdb",
         "dbt-trino",
         "pandas[parquet]",
         "pyarrow",
@@ -18,6 +16,9 @@ setup(
         "pyyaml",
         "pyiceberg[hive]",
         "pyarrow",
+        "trino",
+        "pydantic",
+        "boto3",
     ],
     extras_require={"dev": ["dagster-webserver", "pytest", "faker"]},
 )

@@ -8,4 +8,4 @@ dagster_dbt_bank:
       host: localhost
       port: 8080
       database: iceberg
-      schema: data
+      schema: raw_data

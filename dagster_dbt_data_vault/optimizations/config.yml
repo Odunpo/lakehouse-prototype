@@ -1,0 +1,64 @@
+data_compaction_jobs:
+  - name: data_compaction_data_vault_job
+    schedule: "0 1 * * *"
+    file_size_mb: 256
+    tables:
+      - s_users
+      - s_accounts
+      - l_users_accounts
+      - h_users
+      - h_accounts
+  - name: data_compaction_raw_parsed_job
+    schedule: "0 2 * * *"
+    tables:
+      - parsed_users
+      - parsed_accounts
+      - raw_users
+      - raw_accounts
+expire_snapshots_jobs:
+  - name: expire_snapshots_data_vault_job
+    schedule: "0 1 * * *"
+    tables:
+      - s_users
+      - s_accounts
+      - l_users_accounts
+      - h_users
+      - h_accounts
+  - name: expire_snapshots_raw_parsed_job
+    schedule: "0 2 * * *"
+    retention_days: 14
+    tables:
+      - parsed_users
+      - parsed_accounts
+      - raw_users
+      - raw_accounts
+remove_orphan_files_jobs:
+  - name: remove_orphan_files_data_vault_job
+    schedule: "0 1 * * *"
+    tables:
+      - s_users
+      - s_accounts
+      - l_users_accounts
+      - h_users
+      - h_accounts
+  - name: remove_orphan_files_raw_parsed_job
+    schedule: "0 2 * * *"
+    retention_days: 14
+    tables:
+      - parsed_users
+      - parsed_accounts
+      - raw_users
+      - raw_accounts
+drop_extended_stats_jobs:
+  - name: drop_extended_stats_all_tables_job
+    schedule: "0 1 * * 1"
+    tables:
+      - s_users
+      - s_accounts
+      - l_users_accounts
+      - h_users
+      - h_accounts
+      - parsed_users
+      - parsed_accounts
+      - raw_users
+      - raw_accounts

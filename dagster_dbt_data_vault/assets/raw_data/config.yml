@@ -1,20 +1,8 @@
-global:
-  group_name: raw_data
-  offsets_table: kafka_offsets
+group_name: raw_data
 assets:
-  - name: raw_bank_users
+  - name: raw_users
+    table_name: raw_users
     description: "The table containing Kafka messages from CDC bank users table"
-    kafka:
-      topic: bank.public.users
-    destination:
-      database: data
-      table: users
-    schedule: "* * * * *"
-  - name: raw_bank_accounts
+  - name: raw_accounts
+    table_name: raw_accounts
     description: "The table containing Kafka messages from CDC bank accounts table"
-    kafka:
-      topic: bank.public.accounts
-    destination:
-      database: data
-      table: accounts
-    schedule: "* * * * *"

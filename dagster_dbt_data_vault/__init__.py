@@ -2,20 +2,22 @@ from dagster import Definitions
 
 import dagster_dbt_data_vault.assets as assets
 import dagster_dbt_data_vault.jobs as jobs
-import dagster_dbt_data_vault.schedules as schedules
 import dagster_dbt_data_vault.resources as resources
 import dagster_dbt_data_vault.sensors as sensors
 
+import dagster_dbt_data_vault.optimizations as optimizations
 
 defs = Definitions(
-    assets=[*assets.raw_data_assets, assets.dbt_bank],
-    jobs=[*jobs.raw_data_jobs, *jobs.parsed_data_jobs],
-    schedules=[*schedules.raw_data_schedules],
-    sensors=[sensors.raw_bank_users_sensor],
+    assets=[assets.dbt_bank, *assets.raw_data_assets],
+    jobs=[
+        *jobs.dbt_jobs,
+        *jobs.raw_data_jobs,
+        *optimizations.jobs,
+    ],
     resources={
-        "kafka": resources.kafka_resource,
-        "db": resources.duckdb_resource,
         "dbt": resources.dbt_resource,
-        "iceberg_catalog": resources.iceberg_catalog_resource,
+        "trino": resources.trino_resource,
     },
+    sensors=[*sensors.dbt_sensors, *sensors.raw_data_sensors],
+    schedules=[*optimizations.schedules],
 )
