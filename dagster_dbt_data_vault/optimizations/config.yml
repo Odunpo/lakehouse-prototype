@@ -1,0 +1,54 @@
+data_compaction_jobs:
+  - name: data_compaction_data_vault_job
+    schedule: "0 1 * * *"
+    file_size_mb: 256
+    tables: &data_vault_tables
+      - data_vault.s_users
+      - data_vault.s_accounts
+      - data_vault.l_users_accounts
+      - data_vault.h_users
+      - data_vault.h_accounts
+  - name: data_compaction_raw_parsed_job
+    schedule: "0 2 * * *"
+    tables: &raw_parsed_tables
+      - parsed_data.parsed_users
+      - parsed_data.parsed_accounts
+      - raw_data.users
+      - raw_data.accounts
+expire_snapshots_jobs:
+  - name: expire_snapshots_data_vault_job
+    schedule: "0 1 * * *"
+    tables: *data_vault_tables
+  - name: expire_snapshots_raw_parsed_job
+    schedule: "0 2 * * *"
+    retention_days: 14
+    tables: *raw_parsed_tables
+remove_orphan_files_jobs:
+  - name: remove_orphan_files_data_vault_job
+    schedule: "0 1 * * *"
+    tables: *data_vault_tables
+  - name: remove_orphan_files_raw_parsed_job
+    schedule: "0 2 * * *"
+    retention_days: 14
+    tables: *raw_parsed_tables
+drop_extended_stats_jobs:
+  - name: drop_extended_stats_all_tables_job
+    schedule: "0 1 * * 1"
+    tables:
+      - data_vault.s_users
+      - data_vault.s_accounts
+      - data_vault.l_users_accounts
+      - data_vault.h_users
+      - data_vault.h_accounts
+      - parsed_data.parsed_users
+      - parsed_data.parsed_accounts
+      - raw_data.users
+      - raw_data.accounts
+s3_dbt_tmp_clean_jobs:
+  - name: s3_dbt_tmp_clean_job
+    schedule: "0 * * * *"
+    retention_hours: 2
+    bucket: warehouse
+    prefixes:
+      - parsed_data
+      - data_vault

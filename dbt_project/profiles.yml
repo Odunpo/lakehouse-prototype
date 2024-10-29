@@ -1,0 +1,11 @@
+dagster_dbt_bank:
+  target: dev
+  outputs:
+    dev:
+      type: trino
+      method: none
+      user: commander
+      host: localhost
+      port: 8080
+      database: iceberg
+      schema: raw_data

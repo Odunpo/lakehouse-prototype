@@ -1,0 +1,36 @@
+assets:
+  - name: parsed_users
+    prefix: parsed_data
+    upstream:
+      name: users
+      prefix: raw_data
+  - name: parsed_accounts
+    prefix: parsed_data
+    upstream:
+      name: accounts
+      prefix: raw_data
+  - name: h_users
+    prefix: data_vault
+    upstream:
+      name: parsed_users
+      prefix: parsed_data
+  - name: h_accounts
+    prefix: data_vault
+    upstream:
+      name: parsed_accounts
+      prefix: parsed_data
+  - name: s_users
+    prefix: data_vault
+    upstream:
+      name: parsed_users
+      prefix: parsed_data
+  - name: s_accounts
+    prefix: data_vault
+    upstream:
+      name: parsed_accounts
+      prefix: parsed_data
+  - name: l_users_accounts
+    prefix: data_vault
+    upstream:
+      name: parsed_accounts
+      prefix: parsed_data
