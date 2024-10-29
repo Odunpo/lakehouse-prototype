@@ -1,23 +1,19 @@
 from dagster import Definitions
 
-import dagster_dbt_data_vault.assets as assets
-import dagster_dbt_data_vault.jobs as jobs
+import dagster_dbt_data_vault.raw_data as raw
+import dagster_dbt_data_vault.dbt as dbt
 import dagster_dbt_data_vault.resources as resources
-import dagster_dbt_data_vault.sensors as sensors
-
 import dagster_dbt_data_vault.optimizations as optimizations
 
+
 defs = Definitions(
-    assets=[assets.dbt_bank, *assets.raw_data_assets],
-    jobs=[
-        *jobs.dbt_jobs,
-        *jobs.raw_data_jobs,
-        *optimizations.jobs,
-    ],
+    assets=[*raw.assets, *dbt.assets],
+    jobs=[*raw.jobs, *dbt.jobs, *optimizations.jobs],
+    sensors=[*raw.sensors, *dbt.sensors],
+    schedules=[*optimizations.schedules],
     resources={
         "dbt": resources.dbt_resource,
         "trino": resources.trino_resource,
-    },
-    sensors=[*sensors.dbt_sensors, *sensors.raw_data_sensors],
-    schedules=[*optimizations.schedules],
+        "s3": resources.s3_resource,
+    }
 )

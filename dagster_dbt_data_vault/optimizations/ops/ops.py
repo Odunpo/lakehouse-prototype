@@ -1,9 +1,10 @@
 from typing import List
 
 from dagster import op, Config, OpExecutionContext
+from dagster_aws.s3 import S3Resource
 
-from dagster_dbt_data_vault.resources.raw_data.trino import TrinoResource
-from ..optimizers.trino import TrinoOptimizer
+from dagster_dbt_data_vault.resources.trino import TrinoResource
+from ..optimizers import TrinoOptimizer, S3Optimizer
 
 
 class TablesConfig(Config):
@@ -16,6 +17,12 @@ class CompactConfig(TablesConfig):
 
 class RetentionConfig(TablesConfig):
     retention_days: int
+
+
+class S3Config(Config):
+    bucket: str
+    prefixes: List[str]
+    retention_hours: int
 
 
 @op
@@ -73,3 +80,24 @@ def drop_extended_stats_op(
             trino_optimizer = TrinoOptimizer(conn, table)
             trino_optimizer.drop_extended_stats()
             context.log.info(f"Dropped extended stats for {table}.")
+
+
+@op
+def clean_dbt_tmp_objects_op(
+        context: OpExecutionContext,
+        s3: S3Resource,
+        config: S3Config,
+) -> None:
+    s3_optimizer = S3Optimizer(
+        s3=s3,
+        bucket=config.bucket,
+        prefixes=config.prefixes,
+        retention_hours=config.retention_hours,
+    )
+
+    context.log.info(f"""
+        Deleting objects with retention hours: {config.retention_hours}
+        for prefixes: {config.prefixes}
+    """)
+    deleted_objects = s3_optimizer.delete_stale_dbt_tmp_objects()
+    context.log.info(f"Deleted {len(deleted_objects)} dbt tmp objects")

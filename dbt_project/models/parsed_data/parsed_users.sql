@@ -3,7 +3,7 @@
 {%- set yaml_metadata -%}
 
 source_name: raw_data
-source_table: raw_users
+source_table: users
 columns:
     - name: id
       type: VARCHAR

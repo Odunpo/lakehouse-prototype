@@ -1,0 +1,11 @@
+assets:
+  - name: users
+    group: raw_data
+    prefix: raw_data
+    table: raw_data.users
+    description: "The table containing Kafka messages from CDC bank users table"
+  - name: accounts
+    group: raw_data
+    prefix: raw_data
+    table: raw_data.accounts
+    description: "The table containing Kafka messages from CDC bank accounts table"

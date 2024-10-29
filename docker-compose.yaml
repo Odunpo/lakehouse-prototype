@@ -14,7 +14,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: bank
     volumes:
-      - ./psql_init.sql:/docker-entrypoint-initdb.d/psql_init.sql
+      - ./postgres/psql_init.sql:/docker-entrypoint-initdb.d/psql_init.sql
     networks:
       iceberg_net:
 
@@ -117,11 +117,11 @@ services:
       - minio
       - rest
     volumes:
-      - ./iceberg.properties:/etc/trino/catalog/iceberg.properties
-      # - ./post-init.sh:/tmp/post-init.sh
-      # - ./post-init.sql:/tmp/post-init.sql
-    # command:
-    #   - "/tmp/post-init.sh"
+      - ./trino/iceberg.properties:/etc/trino/catalog/iceberg.properties
+      - ./trino/post-init.sh:/tmp/post-init.sh
+      - ./trino/post-init.sql:/tmp/post-init.sql
+    command:
+     - "/tmp/post-init.sh"
     environment:
       AWS_ACCESS_KEY_ID: admin
       AWS_SECRET_ACCESS_KEY: password

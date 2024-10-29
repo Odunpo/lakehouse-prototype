@@ -121,6 +121,36 @@ def create_drop_extended_stats_jobs(
     return jobs
 
 
+def create_clean_dbt_tmp_objects_jobs(
+        jobs_config: List[conf.S3DbtTmpCleanJobConfig]
+) -> List[JobDefinition]:
+    jobs = []
+
+    for job_config in jobs_config:
+
+        @job(
+            name=job_config.name,
+            config={
+                "ops": {
+                    "clean_dbt_tmp_objects_op": {
+                        "config": {
+                            "bucket": job_config.bucket,
+                            "prefixes": job_config.prefixes,
+                            "retention_hours": job_config.retention_hours,
+                        }
+                    }
+                }
+            },
+            tags={"optimization": True},
+        )
+        def _job():
+            ops.clean_dbt_tmp_objects_op()
+
+        jobs.append(_job)
+
+    return jobs
+
+
 compaction_jobs = create_compaction_jobs(conf.data_compaction_job_configs)
 expire_snapshots_jobs = create_expire_snapshots_jobs(
     conf.expire_snapshots_job_configs
@@ -130,4 +160,7 @@ orphan_files_jobs = create_remove_orphan_files_jobs(
 )
 extended_stats_jobs = create_drop_extended_stats_jobs(
     conf.drop_extended_stats_job_configs
+)
+clean_dbt_tmp_objects_jobs = create_clean_dbt_tmp_objects_jobs(
+    conf.s3_dbt_tmp_clean_job_configs
 )

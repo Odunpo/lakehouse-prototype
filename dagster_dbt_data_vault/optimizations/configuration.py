@@ -30,6 +30,13 @@ class RemoveOrphanFilesJobConfig(BaseRetentionJobConfig):
     ...
 
 
+class S3DbtTmpCleanJobConfig(BaseModel):
+    name: str
+    retention_hours: int
+    bucket: str
+    prefixes: List[str]
+
+
 class ScheduleConfig(BaseModel):
     job_name: str
     schedule: str
@@ -87,6 +94,19 @@ def create_drop_extended_stats_job_configs(
     ]
 
 
+def create_s3_dbt_tmp_clean_job_configs(
+        raw_config: List[dict]
+) -> List[S3DbtTmpCleanJobConfig]:
+    return [
+        S3DbtTmpCleanJobConfig(
+            name=r["name"],
+            retention_hours=r["retention_hours"],
+            bucket=r["bucket"],
+            prefixes=r["prefixes"]
+        ) for r in raw_config
+    ]
+
+
 def create_schedule_configs(raw_config: dict) -> List[ScheduleConfig]:
     schedules = []
     for jobs in raw_config.values():
@@ -112,5 +132,8 @@ remove_orphan_files_job_configs = create_remove_orphan_files_job_configs(
 )
 drop_extended_stats_job_configs = create_drop_extended_stats_job_configs(
     raw_config["drop_extended_stats_jobs"]
+)
+s3_dbt_tmp_clean_job_configs = create_s3_dbt_tmp_clean_job_configs(
+    raw_config["s3_dbt_tmp_clean_jobs"]
 )
 schedule_configs = create_schedule_configs(raw_config)

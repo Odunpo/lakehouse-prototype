@@ -4,5 +4,5 @@ sources:
   - name: raw_data
     schema: raw_data
     tables:
-      - name: raw_users
-      - name: raw_accounts
+      - name: users
+      - name: accounts
