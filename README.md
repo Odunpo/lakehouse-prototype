@@ -317,3 +317,11 @@ USE iceberg.data_vault;
 SHOW TABLES;
 SELECT * FROM s_users;
 ```
+
+## Data Analysis and Visualization with Metabase
+
+Metabase serves as the user interface for data analysis and visualization in this Data Lakehouse prototype.
+It connects directly to Trino, allowing you to explore data in Iceberg and build interactive dashboards and reports.
+The container has an additional Starburst plugin to be able to connect to Trino engine.
+
+To access Metabase, open http://localhost:3001 in your browser.

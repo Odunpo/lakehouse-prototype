@@ -208,6 +208,23 @@ services:
     networks:
       - iceberg_net
 
+  metabase:
+    image: metabase/metabase
+    container_name: metabase
+    ports:
+      - 3001:3000
+    networks:
+      - iceberg_net
+    depends_on:
+      - trino
+    volumes:
+      - ./metabase/starburst-5.0.0.metabase-driver.jar:/plugins/starburst.metabase-driver.jar
+    healthcheck:
+      test: curl --fail -I http://localhost:3000/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 
 networks:
   iceberg_net:
