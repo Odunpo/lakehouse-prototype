@@ -279,6 +279,19 @@ source venv/bin/activate
 pip install -e ".[dev]"
 ```
 
+Create `.env` file and add the next variables:
+```
+DAGSTER_DBT_PARSE_PROJECT_ON_LOAD=1
+ICEBERG_S3_ENDPOINT=http://localhost:9000
+ICEBERG_S3_ACCESS_KEY=admin
+ICEBERG_S3_SECRET_KEY=password
+TRINO_HOST=localhost
+TRINO_PORT=8080
+TRINO_USER=commander
+TRINO_CATALOG=iceberg
+TRINO_SCHEMA=raw_data
+```
+
 To start the Dagster UI web server:
 
 ```bash
