@@ -73,6 +73,7 @@ pip install -e ".[dev]"
 ```bash
 cd dbt_project
 dbt deps
+cd ..
 ```
 
 ### Run Dagster
