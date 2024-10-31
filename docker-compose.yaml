@@ -56,6 +56,11 @@ services:
       OFFSET_STORAGE_TOPIC: postgres_connect_offsets
       STATUS_STORAGE_TOPIC: postgres_connect_statuses
       ENABLE_DEBEZIUM_SCRIPTING: true
+    healthcheck:
+      test: curl --fail -I http://localhost:8083/connectors || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio
@@ -190,6 +195,7 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: flink-jobmanager
         rest.address: flink-jobmanager
+        execution.checkpointing.interval: 1m
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
