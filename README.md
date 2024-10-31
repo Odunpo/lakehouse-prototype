@@ -279,6 +279,14 @@ source venv/bin/activate
 pip install -e ".[dev]"
 ```
 
+### DBT dependencies installation
+```bash
+cd dbt_project
+dbt deps
+```
+
+### Run Dagster
+
 Create `.env` file and add the next variables:
 ```
 DAGSTER_DBT_PARSE_PROJECT_ON_LOAD=1
