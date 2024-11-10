@@ -4,6 +4,8 @@ This is an end-to-end Data Lakehouse prototype built to manage real-time data in
 
 Dagster orchestrates the transformations and processing within Iceberg, with dbt handling SQL transformations and Trino as the query engine. This setup supports ELT (Extract, Load, Transform) workflows and establishes a Data Vault model with historical layers, retaining all source changes for reliable data lineage and analytics.
 
+For more information, visit the [article](https://medium.com/@oleg.1999.ustimenko/building-an-end-to-end-elt-cdc-data-lakehouse-prototype-with-iceberg-87e0b55ebd29) on Medium.
+
 ## Getting started
 
 This guide will help you set up and run the project locally, enabling you to replicate, store, and process streaming data in a Data Vault structure.
@@ -137,3 +139,4 @@ It connects directly to Trino, allowing you to explore data in Iceberg and build
 The container has an additional Starburst plugin to be able to connect to Trino engine.
 
 To access Metabase, open http://localhost:3001 in your browser.
+To connect Metabase to Trino, use Starburst database connection (host: `trino`, port: `8080`, catalog: `iceberg`, username: `commander`)
